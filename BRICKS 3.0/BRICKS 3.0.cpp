@@ -80,6 +80,7 @@ int client_width = 0;
 int client_height = 0;
 int score = 0;
 int level = 1;
+int lifes = 3;
 wchar_t current_player[16] = L"PLAYERCHE";
 int name_size = 10;
 
@@ -116,7 +117,10 @@ ID2D1Bitmap* bmpCerr = nullptr;
 
 ///////////////////////////////////////////////////////////////////
 
-std::vector<BrickObj> Bricks;
+std::vector<BrickObj> vBricks;
+BrickObj Border[16];
+BrickObj Net[16];
+
 
 PadObj Pad = nullptr;
 BallObj Ball = nullptr;
@@ -176,6 +180,7 @@ void InitGame()
 {
     score = 0;
     level = 1;
+    lifes = 3;
     wcscpy_s(current_player, L"PLAYERCHE");
     set_name = false;
 
@@ -185,11 +190,24 @@ void InitGame()
     if (Ball)Ball->Release();
     Ball = nullptr;
 
-    Bricks.clear();
+    vBricks.clear();
+    
+    Pad = new PAD(static_cast<float>(client_width / 2 - 50), 470.0f, pads::normal);
 
-    Pad = new PAD(static_cast<float>(client_width / 2 - 50), 500.0f, pads::normal);
+    for (int i = 0; i < 16; i++)
+    {
+        BrickObj OneBrick = iCreateBrick((float)(i * 50), 550.0f, bricks::border);
+        Border[i] = OneBrick;
+    }
 
-
+    for (int i = 0; i < 16; i++)
+    {
+        if (Net[i])
+        {
+            Net[i]->Release();
+        }
+        Net[i] = nullptr;
+    }
 
 }
 
@@ -787,7 +805,185 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             continue;
         }
 
+        if (Ball)
+        {
+            if (Pad)
+            {
+                if (!(Pad->x >= Ball->ex || Pad->ex <= Ball->x || Pad->y >= Ball->ey || Pad->ey <= Ball->y))
+                {
+                    if (Pad->type == pads::normal)
+                    {
+                        if (Ball->x >= Pad->x && Ball->x <= Pad->x + 5.0f)
+                        {
+                            Ball->lambda = 4;
+                            Ball->dir = dirs::pad_dir_left;
+                            Ball->Move();
+                        }
 
+                        else if (Ball->x > Pad->x + 5 && Ball->x <= Pad->x + 15.0f)
+                        {
+                            Ball->lambda = 3;
+                            Ball->dir = dirs::pad_dir_left;
+                            Ball->Move();
+                        }
+                        
+                        else if (Ball->x > Pad->x + 15 && Ball->x <= Pad->x + 40.0f)
+                        {
+                            Ball->lambda = 2;
+                            Ball->dir = dirs::pad_dir_left;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 40 && Ball->x <= Pad->x + 50.0f)
+                        {
+                            Ball->lambda = 1;
+                            Ball->dir = dirs::pad_dir_center;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 50 && Ball->x <= Pad->x + 75.0f)
+                        {
+                            Ball->lambda = 2;
+                            Ball->dir = dirs::pad_dir_right;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 75 && Ball->x <= Pad->x + 85.0f)
+                        {
+                            Ball->lambda = 3;
+                            Ball->dir = dirs::pad_dir_right;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 85 && Ball->x <= Pad->x + 90.0f)
+                        {
+                            Ball->lambda = 4;
+                            Ball->dir = dirs::pad_dir_right;
+                            Ball->Move();
+                        }
+                    }
+
+                    if (Pad->type == pads::big)
+                    {
+                        if (Ball->x >= Pad->x && Ball->x <= Pad->x + 10.0f)
+                        {
+                            Ball->lambda = 4;
+                            Ball->dir = dirs::pad_dir_left;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 10 && Ball->x <= Pad->x + 25.0f)
+                        {
+                            Ball->lambda = 3;
+                            Ball->dir = dirs::pad_dir_left;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 25 && Ball->x <= Pad->x + 60.0f)
+                        {
+                            Ball->lambda = 2;
+                            Ball->dir = dirs::pad_dir_left;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 60 && Ball->x <= Pad->x + 90.0f)
+                        {
+                            Ball->lambda = 1;
+                            Ball->dir = dirs::pad_dir_center;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 90 && Ball->x <= Pad->x + 110.0f)
+                        {
+                            Ball->lambda = 2;
+                            Ball->dir = dirs::pad_dir_right;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 110 && Ball->x <= Pad->x + 130.0f)
+                        {
+                            Ball->lambda = 3;
+                            Ball->dir = dirs::pad_dir_right;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 130 && Ball->x <= Pad->x + 150.0f)
+                        {
+                            Ball->lambda = 4;
+                            Ball->dir = dirs::pad_dir_right;
+                            Ball->Move();
+                        }
+
+                    }
+
+                    if (Pad->type == pads::shooter)
+                    {
+                        if (Ball->x >= Pad->x && Ball->x <= Pad->x + 10.0f)
+                        {
+                            Ball->lambda = 4;
+                            Ball->dir = dirs::pad_dir_left;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 10 && Ball->x <= Pad->x + 20.0f)
+                        {
+                            Ball->lambda = 3;
+                            Ball->dir = dirs::pad_dir_left;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 20 && Ball->x <= Pad->x + 45.0f)
+                        {
+                            Ball->lambda = 2;
+                            Ball->dir = dirs::pad_dir_left;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 45 && Ball->x <= Pad->x + 55.0f)
+                        {
+                            Ball->lambda = 1;
+                            Ball->dir = dirs::pad_dir_center;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 55 && Ball->x <= Pad->x + 80.0f)
+                        {
+                            Ball->lambda = 2;
+                            Ball->dir = dirs::pad_dir_right;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 80 && Ball->x <= Pad->x + 90.0f)
+                        {
+                            Ball->lambda = 3;
+                            Ball->dir = dirs::pad_dir_right;
+                            Ball->Move();
+                        }
+
+                        else if (Ball->x > Pad->x + 90 && Ball->x <= Pad->x + 100.0f)
+                        {
+                            Ball->lambda = 4;
+                            Ball->dir = dirs::pad_dir_right;
+                            Ball->Move();
+                        }
+                    }
+                }
+            }
+
+            if (!Ball->Move())
+            {
+                Pad->Release();
+                Pad = nullptr;
+                lifes--;
+                Ball->Release();
+                Ball = nullptr;
+            }
+        }
+        else
+        {
+            Pad = new PAD(static_cast<float>(client_width / 2 - 50), 470.0f, pads::normal);
+            Ball = new BALL(Pad->x + 20.0f, Pad->y - 20.0f);
+        }
 
 
 
@@ -862,7 +1058,44 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             }
         }
         
+        for (int i = 0; i < 16; i++)
+        {
+            if (Border[i])Draw->DrawBitmap(bmpBorder, D2D1::RectF(Border[i]->x, Border[i]->y, Border[i]->ex, Border[i]->ey));
+        }
         
+        if (!vBricks.empty())
+        {
+            for (int i = 0; i < vBricks.size(); i++)
+            {
+                switch (vBricks[i]->type)
+                {
+                    case bricks::cerramic:
+                        Draw->DrawBitmap(bmpCerr, D2D1::RectF(vBricks[i]->x, vBricks[i]->y, vBricks[i]->ex, vBricks[i]->ey));
+                        break;
+
+                    case bricks::fall:
+                        Draw->DrawBitmap(bmpFall, D2D1::RectF(vBricks[i]->x, vBricks[i]->y, vBricks[i]->ex, vBricks[i]->ey));
+                        break;
+
+                    case bricks::gold:
+                        Draw->DrawBitmap(bmpGold, D2D1::RectF(vBricks[i]->x, vBricks[i]->y, vBricks[i]->ex, vBricks[i]->ey));
+                        break;
+
+                    case bricks::normal:
+                        Draw->DrawBitmap(bmpNormal, D2D1::RectF(vBricks[i]->x, vBricks[i]->y, vBricks[i]->ex, vBricks[i]->ey));
+                        break;
+
+                    case bricks::silver:
+                        Draw->DrawBitmap(bmpSilver, D2D1::RectF(vBricks[i]->x, vBricks[i]->y, vBricks[i]->ex, vBricks[i]->ey));
+                        break;
+
+                    case bricks::stone:
+                        Draw->DrawBitmap(bmpStone, D2D1::RectF(vBricks[i]->x, vBricks[i]->y, vBricks[i]->ex, vBricks[i]->ey));
+                        break;
+                }
+            }
+        }
+
         
         
         /////////////////////////////////////////////////
