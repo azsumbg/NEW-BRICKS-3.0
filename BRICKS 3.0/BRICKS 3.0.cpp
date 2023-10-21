@@ -187,6 +187,10 @@ void InitGame()
 
     Bricks.clear();
 
+    Pad = new PAD(static_cast<float>(client_width / 2 - 50), 500.0f, pads::normal);
+
+
+
 }
 
 INT_PTR CALLBACK DlgProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lParam)
@@ -422,6 +426,23 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
             break;
         }
 
+        break;
+
+    case WM_KEYDOWN:
+        if (pause)break;
+        if (Pad)
+        {
+            if (LOWORD(wParam == VK_LEFT))
+            {
+                Pad->Move(dirs::left);
+                break;
+            }
+            if (LOWORD(wParam == VK_RIGHT))
+            {
+                Pad->Move(dirs::right);
+                break;
+            }
+        }
         break;
 
 
@@ -800,6 +821,51 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 Draw->DrawText(L"ПОМОЩ ЗА ИГРАТА", 16, nrmText, D2D1::RectF((float)(but3R.left + 20), 10.0f, (float)(but3R.right),
                     50.0f), TextBrush);
         }
+        
+        if (Pad)
+        {
+            switch (Pad->type)
+            {
+                case pads::normal:
+                    Draw->DrawBitmap(bmpPad, D2D1::RectF(Pad->x, Pad->y, Pad->ex, Pad->ey));
+                    break;
+
+                case pads::big:
+                    Draw->DrawBitmap(bmpBigPad, D2D1::RectF(Pad->x, Pad->y, Pad->ex, Pad->ey));
+                    break;
+
+                case pads::shooter:
+                    Draw->DrawBitmap(bmpShootPad, D2D1::RectF(Pad->x, Pad->y, Pad->ex, Pad->ey));
+                    break;
+
+                case pads::net:
+                    Draw->DrawBitmap(bmpNet, D2D1::RectF(Pad->x, Pad->y, Pad->ex, Pad->ey));
+                    break;
+            }
+        }
+        
+        if (Ball)
+        {
+            switch (Ball->type)
+            {
+                case balls::normal:
+                    Draw->DrawBitmap(bmpBall, D2D1::RectF(Ball->x, Ball->y, Ball->ex, Ball->ey));
+                    break;
+
+                case balls::fire:
+                    Draw->DrawBitmap(bmpFireBall[Ball->Frame()], D2D1::RectF(Ball->x, Ball->y, Ball->ex, Ball->ey));
+                    break;
+
+                case balls::bullet:
+                    Draw->DrawBitmap(bmpBullet, D2D1::RectF(Ball->x, Ball->y, Ball->ex, Ball->ey));
+                    break;
+            }
+        }
+        
+        
+        
+        
+        /////////////////////////////////////////////////
         Draw->EndDraw();
 
 
