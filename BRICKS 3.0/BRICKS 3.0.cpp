@@ -83,6 +83,7 @@ int level = 1;
 int lifes = 3;
 wchar_t current_player[16] = L"PLAYERCHE";
 int name_size = 10;
+int level_bricks = 72;
 
 //////////////////////////////////////////
 
@@ -179,11 +180,27 @@ void GameOver()
 }
 void InitLevel()
 {
+    if (Pad)Pad->Release();
+    Pad = nullptr;
+    Pad = new PAD(static_cast<float>(client_width / 2 - 50), 470.0f, pads::normal);
+
+    if (Ball)Ball->Release();
+    Ball = nullptr;
+    
+    if (Net)Net->Release();
+    Net = nullptr;
+
     vBricks.clear();
 
+    if (level > 1 && sound)
+    {
+        mciSendString(L"play .\\res\\snd\\levelup.wav", NULL, NULL, NULL);
+        MessageBox(bHwnd, L"СЛЕДВАЩО НИВО ! ГОТОВИИИ....", L"Нивото преминато !", MB_OK | MB_APPLMODAL | MB_ICONINFORMATION);
+    }
     switch (level)
     {
     case 1:
+        level_bricks = 72;
         for (int ty = 0; ty < 4; ty++)
         {
             for (int tx = 0; tx < 18; tx++)
@@ -196,8 +213,43 @@ void InitLevel()
         break;
 
     case 2:
-
+        level_bricks = 68;
+        for (int ty = 0; ty < 4; ty++)
+        {
+            for (int tx = 0; tx < 18; tx++)
+            {
+                BrickObj OneBrick = nullptr;
+                int ttype = rand() % 4 + 1;
+                if (ty == 3 && (tx == 3 || tx == 7 || tx == 11 || tx == 15))
+                    OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), bricks::stone);
+                else OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), static_cast<bricks>(ttype));
+                vBricks.push_back(OneBrick);
+            }
+        }
         break;
+
+    case 3:
+        level_bricks = 64;
+        for (int ty = 0; ty < 4; ty++)
+        {
+            for (int tx = 0; tx < 18; tx++)
+            {
+                BrickObj OneBrick = nullptr;
+                int ttype = rand() % 4 + 1;
+                if ((ty == 3 && (tx == 3 || tx == 7 || tx == 11 || tx == 15))
+                    || (ty == 1 && (tx == 2 || tx == 6 || tx == 10 || tx == 14)))
+                    OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), bricks::stone);
+                else OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), static_cast<bricks>(ttype));
+                vBricks.push_back(OneBrick);
+            }
+        }
+        break;
+
+
+
+
+
+
 
     }
 
@@ -219,6 +271,7 @@ void InitGame()
     vBricks.clear();
     
     Pad = new PAD(static_cast<float>(client_width / 2 - 50), 470.0f, pads::normal);
+
 
     for (int i = 0; i < 16; i++)
     {
@@ -1030,6 +1083,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                         if ((*brick)->lifes <= 0)
                         {
                             score += 10 + level * 2;
+                            level_bricks--;
+                            if (level_bricks <= 0)
+                            {
+                                level++;
+                                InitLevel();
+                                break;
+                            }
                             if (rand() % 5 == 2)
                             {
                                 BrickObj aFall = iCreateBrick((*brick)->x, (*brick)->y, bricks::fall);
