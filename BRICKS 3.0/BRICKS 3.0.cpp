@@ -96,6 +96,7 @@ IDWriteTextFormat* bigText = nullptr;
 ID2D1RadialGradientBrush* FieldBrush = nullptr;
 ID2D1RadialGradientBrush* ButBackBrush = nullptr;
 ID2D1SolidColorBrush* TextBrush = nullptr;
+ID2D1SolidColorBrush* StatusBrush = nullptr;
 ID2D1SolidColorBrush* hgltTextBrush = nullptr;
 ID2D1SolidColorBrush* inactiveTextBrush = nullptr;
 
@@ -119,8 +120,7 @@ ID2D1Bitmap* bmpCerr = nullptr;
 
 std::vector<BrickObj> vBricks;
 BrickObj Border[16];
-BrickObj Net[16];
-
+PadObj Net = nullptr;
 
 PadObj Pad = nullptr;
 BallObj Ball = nullptr;
@@ -139,6 +139,7 @@ void ReleaseCOM()
     if (FieldBrush)FieldBrush->Release();
     if (ButBackBrush)ButBackBrush->Release();
     if (TextBrush)TextBrush->Release();
+    if (StatusBrush)StatusBrush->Release();
     if (hgltTextBrush)hgltTextBrush->Release();
     if (inactiveTextBrush)inactiveTextBrush->Release();
 
@@ -176,6 +177,31 @@ void GameOver()
     bMsg.message = WM_QUIT;
     bMsg.wParam = 0;
 }
+void InitLevel()
+{
+    vBricks.clear();
+
+    switch (level)
+    {
+    case 1:
+        for (int ty = 0; ty < 4; ty++)
+        {
+            for (int tx = 0; tx < 18; tx++)
+            {
+                int ttype = rand() % 4 + 1;
+                BrickObj OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), static_cast<bricks>(ttype));
+                vBricks.push_back(OneBrick);
+            }
+        }
+        break;
+
+    case 2:
+
+        break;
+
+    }
+
+}
 void InitGame()
 {
     score = 0;
@@ -200,16 +226,12 @@ void InitGame()
         Border[i] = OneBrick;
     }
 
-    for (int i = 0; i < 16; i++)
-    {
-        if (Net[i])
-        {
-            Net[i]->Release();
-        }
-        Net[i] = nullptr;
-    }
-
+    if (Net)Net->Release();
+    Net = nullptr;
+    
+    InitLevel();
 }
+
 
 INT_PTR CALLBACK DlgProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -575,11 +597,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
         ErrExit(eD2D);
     }
 
-    hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::DeepSkyBlue), &TextBrush);
+    hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::AliceBlue), &TextBrush);
     if (hr != S_OK)
     {
         std::wofstream log(L".\\res\\data\\log.dat", std::ios::app);
         log << L"TextBrush is NULL !" << std::endl;
+        log.close();
+        ErrExit(eD2D);
+    }
+
+    hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::DarkGreen), &StatusBrush);
+    if (hr != S_OK)
+    {
+        std::wofstream log(L".\\res\\data\\log.dat", std::ios::app);
+        log << L"StatusBrush is NULL !" << std::endl;
         log.close();
         ErrExit(eD2D);
     }
@@ -985,7 +1016,203 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             Ball = new BALL(Pad->x + 20.0f, Pad->y - 20.0f);
         }
 
+        if (!vBricks.empty() && Ball)
+        {
+            for (std::vector<BrickObj>::iterator brick = vBricks.begin(); brick < vBricks.end(); ++brick)
+            {
+                if ((*brick)->type != bricks::fall &&
+                    !(Ball->x >= (*brick)->ex || Ball->ex <= (*brick)->x || Ball->y >= (*brick)->ey || Ball->ey <= (*brick)->y))
+                {
+                    if ((*brick)->type != bricks::stone)
+                    {
+                        if (sound)mciSendString(L"play .\\res\\snd\\clear.wav", NULL, NULL, NULL);
+                        (*brick)->lifes--;
+                        if ((*brick)->lifes <= 0)
+                        {
+                            score += 10 + level * 2;
+                            if (rand() % 5 == 2)
+                            {
+                                BrickObj aFall = iCreateBrick((*brick)->x, (*brick)->y, bricks::fall);
+                                vBricks.push_back(aFall);
+                                (*brick)->Release();
+                                vBricks.erase(brick);
+                                
+                            }
+                            else
+                            {
+                                (*brick)->Release();
+                                vBricks.erase(brick);
+                            }
+                        }
+                    }
 
+                    switch (Ball->dir)
+                    {
+                        case dirs::up:
+                            {
+                                int chance = rand() % 3;
+                                if (chance == 0)Ball->dir = dirs::down;
+                                else if(chance==1)Ball->dir = dirs::down_right;
+                                else Ball->dir = dirs::down_left;
+                            }
+                            break;
+
+                        case dirs::up_right:
+                        {
+                            int chance = rand() % 3;
+                            if (chance == 0)Ball->dir = dirs::down;
+                            else if (chance == 1)Ball->dir = dirs::down_right;
+                            else Ball->dir = dirs::down_left;
+                        }
+                        break;
+
+                        case dirs::up_left:
+                        {
+                            int chance = rand() % 3;
+                            if (chance == 0)Ball->dir = dirs::down;
+                            else if (chance == 1)Ball->dir = dirs::down_right;
+                            else Ball->dir = dirs::down_left;
+                        }
+                        break;
+
+                        case dirs::pad_dir_right:
+                        {
+                            int chance = rand() % 3;
+                            if (chance == 0)Ball->dir = dirs::down;
+                            else if (chance == 1)Ball->dir = dirs::down_right;
+                            else Ball->dir = dirs::down_left;
+                        }
+                        break;
+
+                        case dirs::pad_dir_left:
+                        {
+                            int chance = rand() % 3;
+                            if (chance == 0)Ball->dir = dirs::down;
+                            else if (chance == 1)Ball->dir = dirs::down_right;
+                            else Ball->dir = dirs::down_left;
+                        }
+                        break;
+
+                        case dirs::down:
+                        {
+                            int chance = rand() % 3;
+                            if (chance == 0)Ball->dir = dirs::up;
+                            else if (chance == 1)Ball->dir = dirs::up_right;
+                            else Ball->dir = dirs::up_left;
+                        }
+                        break;
+
+                        case dirs::down_right:
+                        {
+                            int chance = rand() % 3;
+                            if (chance == 0)Ball->dir = dirs::up;
+                            else if (chance == 1)Ball->dir = dirs::up_right;
+                            else Ball->dir = dirs::up_left;
+                        }
+                        break;
+
+                        case dirs::down_left:
+                        {
+                            int chance = rand() % 3;
+                            if (chance == 0)Ball->dir = dirs::up;
+                            else if (chance == 1)Ball->dir = dirs::up_right;
+                            else Ball->dir = dirs::up_left;
+                        }
+                        break;
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        if (!vBricks.empty())
+        {
+            for (std::vector<BrickObj>::iterator falling = vBricks.begin(); falling < vBricks.end(); ++falling)
+            {
+                if ((*falling)->type == bricks::fall)
+                {
+                    if (!(*falling)->Move())
+                    {
+                        (*falling)->Release();
+                        vBricks.erase(falling);
+                        break;
+                    }
+                    else if(Pad)
+                    {
+                        if (!(Pad->x >= (*falling)->ex || Pad->ex <= (*falling)->x 
+                            || Pad->y >= (*falling)->ey || Pad->ey <= (*falling)->y))
+                        {
+                            switch (rand() % 6)
+                            {
+                                case 0:
+                                    if (Pad->type == pads::normal)
+                                        Pad->Transform(pads::big);
+                                    else score += 30;
+                                    break;
+
+                                case 1:
+                                    if (Pad->type == pads::big)
+                                        Pad->Transform(pads::shooter);
+                                    else score += 30;
+                                    break;
+
+                                case 3:
+                                    if (Pad->type == pads::shooter)
+                                        Pad->Transform(pads::normal);
+                                    else score += 30;
+                                    break;
+
+                                case 4:
+                                    if (!Net)Net = new PAD(0, 520.0f, pads::net);
+                                    else score += 30;
+                                    break;
+
+                                case 5:
+                                    if (rand() % 3 == 1)lifes++;
+                                    else score += 50;
+                                    break;
+                            }
+
+                            (*falling)->Release();
+                            vBricks.erase(falling);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (Net)
+        {
+            if (Ball)
+            {
+                if (!(Net->x >= Ball->ex || Net->ex <= Ball->x || Net->y >= Ball->ey || Net->ey <= Ball->y))
+                {
+                    switch (rand() % 3)
+                    {
+                        case 0:
+                            Ball->dir = dirs::up;
+                            break;
+
+                        case 1:
+                            Ball->dir = dirs::up_right;
+                            break;
+
+                        case 2:
+                            Ball->dir = dirs::up_left;
+                            break;
+                    }
+                }
+            }
+            
+            Net->net_counter--;
+            if (Net->net_counter <= 0)
+            {
+                Net->Release();
+                Net = nullptr;
+            }
+        }
 
 
         //DRAW THINGS ************************************************
@@ -1018,6 +1245,39 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                     50.0f), TextBrush);
         }
         
+        for (int i = 0; i < 16; i++)
+        {
+            if (Border[i])Draw->DrawBitmap(bmpBorder, D2D1::RectF(Border[i]->x, Border[i]->y, Border[i]->ex, Border[i]->ey));
+        }
+
+        wchar_t status[500] = L"\0";
+        wchar_t add[10] = L"\0";
+        int status_size = 0;
+       
+        wcscpy_s(status, current_player);
+        
+        wcscat_s(status, L", ниво: ");
+        wsprintf(add, L"%d", level);
+        wcscat_s(status, add);
+
+        wcscat_s(status, L", животи: ");
+        wsprintf(add, L"%d", lifes);
+        wcscat_s(status, add);
+
+        wcscat_s(status, L", резултат: ");
+        wsprintf(add, L"%d", score);
+        wcscat_s(status, add);
+
+        for (int i = 0; i < 500; ++i)
+        {
+            if (status[i] != 0)status_size++;
+            else break;
+        }
+        if (nrmText && TextBrush)
+            Draw->DrawText(status, status_size, nrmText, D2D1::RectF(5.0f, 570.0f, (float)(client_width), (float)(client_height)), 
+                StatusBrush);
+
+
         if (Pad)
         {
             switch (Pad->type)
@@ -1033,12 +1293,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 case pads::shooter:
                     Draw->DrawBitmap(bmpShootPad, D2D1::RectF(Pad->x, Pad->y, Pad->ex, Pad->ey));
                     break;
-
-                case pads::net:
-                    Draw->DrawBitmap(bmpNet, D2D1::RectF(Pad->x, Pad->y, Pad->ex, Pad->ey));
-                    break;
             }
         }
+        if (Net)
+            Draw->DrawBitmap(bmpNet, D2D1::RectF(Net->x, Net->y, Net->ex, Net->ey));
+
         
         if (Ball)
         {
@@ -1058,10 +1317,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             }
         }
         
-        for (int i = 0; i < 16; i++)
-        {
-            if (Border[i])Draw->DrawBitmap(bmpBorder, D2D1::RectF(Border[i]->x, Border[i]->y, Border[i]->ex, Border[i]->ey));
-        }
         
         if (!vBricks.empty())
         {
