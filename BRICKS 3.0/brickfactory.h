@@ -201,7 +201,7 @@ class BRICKFACTORY_API BALL :public BASE
 		{
 			if (type == balls::bullet)
 			{
-				if (ey - 5.0f + speed <= 50.0f)
+				if (ey - 5.0f + speed >= 50.0f)
 				{
 					y -= 5.0f + speed;
 					SetEdges();

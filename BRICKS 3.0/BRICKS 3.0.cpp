@@ -120,6 +120,7 @@ ID2D1Bitmap* bmpCerr = nullptr;
 ///////////////////////////////////////////////////////////////////
 
 std::vector<BrickObj> vBricks;
+std::vector<BallObj>vBullets;
 BrickObj Border[16];
 PadObj Net = nullptr;
 
@@ -183,6 +184,7 @@ void InitLevel()
     if (Pad)Pad->Release();
     Pad = nullptr;
     Pad = new PAD(static_cast<float>(client_width / 2 - 50), 470.0f, pads::normal);
+   
 
     if (Ball)Ball->Release();
     Ball = nullptr;
@@ -191,11 +193,28 @@ void InitLevel()
     Net = nullptr;
 
     vBricks.clear();
+    vBullets.clear();
 
-    if (level > 1 && sound)
+    if (level > 1)
     {
-        mciSendString(L"play .\\res\\snd\\levelup.wav", NULL, NULL, NULL);
-        MessageBox(bHwnd, L"СЛЕДВАЩО НИВО ! ГОТОВИИИ....", L"Нивото преминато !", MB_OK | MB_APPLMODAL | MB_ICONINFORMATION);
+        if(sound)mciSendString(L"play .\\res\\snd\\levelup.wav", NULL, NULL, NULL);
+        Draw->BeginDraw();
+        Draw->FillRectangle(D2D1::RectF(0.0f, 0.0f, (float)(client_width), 50.0f), ButBackBrush);
+        Draw->FillRectangle(D2D1::RectF(0.0f, 50.0f, (float)(client_width), (float)(client_height)), FieldBrush);
+        if (TextBrush && nrmText)
+        {
+            Draw->DrawText(L"ИМЕ НА ИГРАЧ", 13, nrmText, D2D1::RectF((float)(but1R.left + 15), 10.0f, (float)(but1R.right),
+                50.0f), TextBrush);
+            Draw->DrawText(L"ЗВУЦИ ON / OFF", 15, nrmText, D2D1::RectF((float)(but2R.left + 5), 10.0f, (float)(but2R.right),
+                50.0f), TextBrush);
+            Draw->DrawText(L"ПОМОЩ ЗА ИГРАТА", 16, nrmText, D2D1::RectF((float)(but3R.left + 20), 10.0f, (float)(but3R.right),
+                50.0f), TextBrush);
+        }
+        if (TextBrush && bigText)
+            Draw->DrawText(L"НИВОТО ПОЧИСТЕНО !", 19, bigText, D2D1::RectF(5.0f, (float)(client_height / 2 - 50),
+                (float)(client_width), (float)(client_height)), TextBrush);
+        Draw->EndDraw();
+        Sleep(3500);
     }
     switch (level)
     {
@@ -269,9 +288,9 @@ void InitGame()
     Ball = nullptr;
 
     vBricks.clear();
+    vBullets.clear();
     
     Pad = new PAD(static_cast<float>(client_width / 2 - 50), 470.0f, pads::normal);
-
 
     for (int i = 0; i < 16; i++)
     {
@@ -533,6 +552,15 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
             if (LOWORD(wParam == VK_RIGHT))
             {
                 Pad->Move(dirs::right);
+                break;
+            }
+            if (LOWORD(wParam) == VK_SHIFT)
+            {
+                if (Pad && Pad->type == pads::shooter)
+                {
+                    vBullets.push_back(new BALL(Pad->x + 20, Pad->y, balls::bullet));
+                    break;
+                }
                 break;
             }
         }
@@ -1079,7 +1107,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                     if ((*brick)->type != bricks::stone)
                     {
                         if (sound)mciSendString(L"play .\\res\\snd\\clear.wav", NULL, NULL, NULL);
-                        (*brick)->lifes--;
+                        if (Ball->type == balls::fire)(*brick)->lifes -= 3;
+                        else (*brick)->lifes--;
+
                         if ((*brick)->lifes <= 0)
                         {
                             score += 10 + level * 2;
@@ -1203,7 +1233,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                         if (!(Pad->x >= (*falling)->ex || Pad->ex <= (*falling)->x 
                             || Pad->y >= (*falling)->ey || Pad->ey <= (*falling)->y))
                         {
-                            switch (rand() % 6)
+                            switch (rand() % 7)
                             {
                                 case 0:
                                     if (Pad->type == pads::normal)
@@ -1232,6 +1262,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                                     if (rand() % 3 == 1)lifes++;
                                     else score += 50;
                                     break;
+
+                                case 6:
+                                    Ball->Transform();
+                                    break;
+
+                                
                             }
 
                             (*falling)->Release();
@@ -1271,6 +1307,73 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             {
                 Net->Release();
                 Net = nullptr;
+            }
+        }
+
+        if (!vBullets.empty())
+        {
+            
+            for (std::vector<BallObj>::iterator bul = vBullets.begin(); bul < vBullets.end(); bul++)
+            {
+                if (!(*bul)->Move())
+                {
+                    (*bul)->Release();
+                    vBullets.erase(bul);
+                    break;
+                }
+            }
+        }
+
+        if (!vBullets.empty() && !vBricks.empty())
+        {
+            for (std::vector<BrickObj>::iterator brick = vBricks.begin(); brick < vBricks.end(); brick++)
+            {
+                bool killed = false;
+
+                for (std::vector<BallObj>::iterator bul = vBullets.begin(); bul < vBullets.end(); ++bul)
+                {
+                    if (!((*bul)->x >= (*brick)->ex || (*bul)->ex <= (*brick)->x
+                        || (*bul)->y >= (*brick)->ey || (*bul)->ey <= (*brick)->y))
+                    {
+                        (*bul)->Release();
+                        vBullets.erase(bul);
+                        if ((*brick)->type != bricks::stone && (*brick)->type != bricks::fall)
+                        {
+                            (*brick)->lifes -= 2;
+
+                            if (sound)mciSendString(L"play .\\res\\snd\\clear.wav", NULL, NULL, NULL);
+                         
+                            if ((*brick)->lifes <= 0)
+                            {
+                                killed = true;
+                                score += 10 + level * 2;
+                                level_bricks--;
+                                if (level_bricks <= 0)
+                                {
+                                    level++;
+                                    InitLevel();
+                                    break;
+                                }
+                                if (rand() % 5 == 2)
+                                {
+                                    BrickObj aFall = iCreateBrick((*brick)->x, (*brick)->y, bricks::fall);
+                                    vBricks.push_back(aFall);
+                                    (*brick)->Release();
+                                    vBricks.erase(brick);
+                                }
+                                else
+                                {
+                                    (*brick)->Release();
+                                    vBricks.erase(brick);
+                                }
+                            }
+
+                        }
+
+                        break;
+                    }
+                }
+                if (killed)break;
             }
         }
 
@@ -1328,6 +1431,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
         wsprintf(add, L"%d", score);
         wcscat_s(status, add);
 
+        if (Net)
+        {
+            wcscat_s(status, L", мрежа: ");
+            wsprintf(add, L"%d", Net->net_counter);
+            wcscat_s(status, add);
+        }
+
         for (int i = 0; i < 500; ++i)
         {
             if (status[i] != 0)status_size++;
@@ -1336,7 +1446,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
         if (nrmText && TextBrush)
             Draw->DrawText(status, status_size, nrmText, D2D1::RectF(5.0f, 570.0f, (float)(client_width), (float)(client_height)), 
                 StatusBrush);
-
 
         if (Pad)
         {
@@ -1372,9 +1481,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                     break;
 
                 case balls::bullet:
-                    Draw->DrawBitmap(bmpBullet, D2D1::RectF(Ball->x, Ball->y, Ball->ex, Ball->ey));
                     break;
             }
+        }
+
+        if (!vBullets.empty())
+        {
+            for (int i = 0; i < vBullets.size(); ++i)
+                Draw->DrawBitmap(bmpBullet, D2D1::RectF(vBullets[i]->x, vBullets[i]->y, vBullets[i]->ex, vBullets[i]->ey));
+
         }
         
         
