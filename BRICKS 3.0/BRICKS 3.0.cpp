@@ -76,6 +76,8 @@ bool b1_hglt = false;
 bool b2_hglt = false;
 bool b3_hglt = false;
 
+bool game_winner = false;
+
 int client_width = 0;
 int client_height = 0;
 int score = 0;
@@ -264,12 +266,125 @@ void InitLevel()
         }
         break;
 
+    case 4:
+        level_bricks = 64;
+        for (int ty = 0; ty < 4; ty++)
+        {
+            for (int tx = 0; tx < 18; tx++)
+            {
+                BrickObj OneBrick = nullptr;
+                int ttype = rand() % 4 + 1;
+                if ((ty == 3 && (tx == 1 || tx == 4 || tx == 7 || tx == 11))
+                    || (ty == 0 && (tx == 5 || tx == 8 || tx == 11 || tx == 14)))
+                    OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), bricks::stone);
+                else OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), static_cast<bricks>(ttype));
+                vBricks.push_back(OneBrick);
+            }
+        }
+        break;
 
+    case 5:
+        level_bricks = 60;
+        for (int ty = 0; ty < 4; ty++)
+        {
+            for (int tx = 0; tx < 18; tx++)
+            {
+                BrickObj OneBrick = nullptr;
+                int ttype = rand() % 4 + 1;
+                if ((tx == 8 && (ty == 0 || ty == 1 || ty == 2 || ty == 3))
+                    || (ty == 1 && (tx == 4 || tx == 5 || tx == 6 || tx == 7 || tx == 8 || tx == 9 || tx == 10 || tx == 11)))
+                    OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), bricks::stone);
+                else OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), static_cast<bricks>(ttype));
+                vBricks.push_back(OneBrick);
+            }
+        }
+        break;
 
+    case 6:
+        level_bricks = 58;
+        for (int ty = 0; ty < 4; ty++)
+        {
+            for (int tx = 0; tx < 18; tx++)
+            {
+                BrickObj OneBrick = nullptr;
+                int ttype = rand() % 4 + 1;
+                if ((tx == 8 && (ty == 0 || ty == 1 || ty == 2 || ty == 3)) || tx == 0 || tx == 17
+                    || (ty == 1 && (tx == 4 || tx == 5 || tx == 6 || tx == 7 || tx == 8 || tx == 9 || tx == 10 || tx == 11)))
+                    OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), bricks::stone);
+                else OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), static_cast<bricks>(ttype));
+                vBricks.push_back(OneBrick);
+            }
+        }
+        break;
 
+    case 7:
+        level_bricks = 64;
+        for (int ty = 0; ty < 4; ty++)
+        {
+            for (int tx = 0; tx < 18; tx++)
+            {
+                BrickObj OneBrick = nullptr;
+                int ttype = rand() % 4 + 1;
+                if ((ty == 0 && (tx == 1 || tx == 16)) || (ty == 1 && (tx == 3 || tx == 14))
+                    || (ty == 2 && (tx == 5 || tx == 12)) || (ty == 3 && (tx == 6 || tx == 10)))
+                    OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), bricks::stone);
+                else OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), static_cast<bricks>(ttype));
+                vBricks.push_back(OneBrick);
+            }
+        }
+        break;
 
+    case 8:
+        level_bricks = 60;
+        for (int ty = 0; ty < 4; ty++)
+        {
+            for (int tx = 0; tx < 18; tx++)
+            {
+                BrickObj OneBrick = nullptr;
+                int ttype = rand() % 4 + 1;
+                if (tx == 1 || tx == 16 || (ty == 3 && ((tx == 2 || tx == 3 || tx == 14 || tx == 15))))
+                    OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), bricks::stone);
+                else OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), static_cast<bricks>(ttype));
+                vBricks.push_back(OneBrick);
+            }
+        }
+        break;
 
+    case 9:
+        level_bricks = 52;
+        for (int ty = 0; ty < 4; ty++)
+        {
+            for (int tx = 0; tx < 18; tx++)
+            {
+                BrickObj OneBrick = nullptr;
+                int ttype = rand() % 4 + 1;
+                if (tx == 1 || tx == 4 || tx == 13 || tx == 16 || (ty == 3 && ((tx == 2 || tx == 3 || tx == 14 || tx == 15))))
+                    OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), bricks::stone);
+                else OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), static_cast<bricks>(ttype));
+                vBricks.push_back(OneBrick);
+            }
+        }
+        break;
 
+    case 10:
+        level_bricks = 51;
+        for (int ty = 0; ty < 4; ty++)
+        {
+            for (int tx = 0; tx < 18; tx++)
+            {
+                BrickObj OneBrick = nullptr;
+                int ttype = rand() % 4 + 1;
+                if (tx == 1 || tx == 16 || (ty == 0 && ((tx == 8 || tx == 9)))
+                    || (ty == 1 && ((tx == 7 || tx == 10))) || (ty == 2 && ((tx == 6 || tx == 11)))
+                    || (ty == 3 && ((tx == 2 || tx == 3 || tx == 4 || tx == 12 || tx == 13 || tx == 14 || tx == 15))))
+                    OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), bricks::stone);
+                else OneBrick = iCreateBrick((float)(tx * 40 + 40), (float)(ty * 40 + 90), static_cast<bricks>(ttype));
+                vBricks.push_back(OneBrick);
+            }
+        }
+        break;
+
+    default: game_winner = true;
     }
 
 }
@@ -882,6 +997,23 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     }
     ///////////////////////////////////////////////////////////////////////
 
+    
+    wchar_t logo[28] = L"ТУХЛИЧКИ 3.0\n\ndev. Daniel";
+    wchar_t logo_to_show[28] = L"\0";
+
+    for (int i = 0; i < 28; i++)
+    {
+        mciSendString(L"play .\\res\\snd\\click.wav", NULL, NULL, NULL);
+        Draw->BeginDraw();
+        Draw->Clear(D2D1::ColorF(D2D1::ColorF::DarkViolet));
+        logo_to_show[i] = logo[i];
+       
+        if (bigText && TextBrush)
+            Draw->DrawText(logo_to_show, 28, bigText, D2D1::RectF(150.0f, (float)(client_height / 2 - 50), 800.0f, 500.0f), TextBrush);
+        Draw->EndDraw();
+        Sleep(200);
+    }
+    Sleep(3000);
 
     //MAIN MESSAGE LOOP ***********************************
 
