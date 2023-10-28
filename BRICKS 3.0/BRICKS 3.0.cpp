@@ -170,7 +170,38 @@ void ErrExit(int which_error)
     ReleaseCOM();
     exit(1);
 }
+BOOL CheckRecord()
+{
+    int result = 0;
+    if (game_winner)score *= 5;
+    CheckFile(record_file, &result);
 
+    if (result == FILE_NOT_EXIST)
+    {
+        std::wofstream rec(record_file);
+        rec << score << std::endl;
+        for (int i = 0; i < 16; i++)rec << static_cast<int>(current_player[i]) << std::endl;
+        rec.close();
+        return first_record;
+    }
+    else
+    {
+        std::wifstream check(record_file);
+        int svdscr = 0;
+        check >> svdscr;
+        check.close();
+        if (svdscr < score)
+        {
+            std::wofstream rec(record_file);
+            rec << score << std::endl;
+            for (int i = 0; i < 16; i++)rec << static_cast<int>(current_player[i]) << std::endl;
+            rec.close();
+            return record;
+        }
+    }
+
+    return no_record;
+}
 void GameOver()
 {
     PlaySound(NULL, NULL, NULL);
@@ -1003,7 +1034,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
     for (int i = 0; i < 28; i++)
     {
-        mciSendString(L"play .\\res\\snd\\click.wav", NULL, NULL, NULL);
+        if (logo[i] != ' ' && logo[i] != '\n' && logo[i] != '\0')mciSendString(L"play .\\res\\snd\\click.wav", NULL, NULL, NULL);
         Draw->BeginDraw();
         Draw->Clear(D2D1::ColorF(D2D1::ColorF::DarkViolet));
         logo_to_show[i] = logo[i];
@@ -1055,6 +1086,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             {
                 if (!(Pad->x >= Ball->ex || Pad->ex <= Ball->x || Pad->y >= Ball->ey || Pad->ey <= Ball->y))
                 {
+                    if (sound)mciSendString(L"play .\\res\\snd\\hit.wav", NULL, NULL, NULL);
                     if (Pad->type == pads::normal)
                     {
                         if (Ball->x >= Pad->x && Ball->x <= Pad->x + 5.0f)
@@ -1219,8 +1251,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 Pad->Release();
                 Pad = nullptr;
                 lifes--;
+                if (sound)mciSendString(L"play .\\res\\snd\\killed.wav", NULL, NULL, NULL);
                 Ball->Release();
                 Ball = nullptr;
+                if (lifes <= 0)GameOver();
             }
         }
         else
@@ -1267,6 +1301,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                             }
                         }
                     }
+                    else if (sound)mciSendString(L"play .\\res\\snd\\hit.wav", NULL, NULL, NULL);
 
                     switch (Ball->dir)
                     {
@@ -1365,7 +1400,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                         if (!(Pad->x >= (*falling)->ex || Pad->ex <= (*falling)->x 
                             || Pad->y >= (*falling)->ey || Pad->ey <= (*falling)->y))
                         {
-                            switch (rand() % 7)
+                            if (sound)mciSendString(L"play .\\res\\snd\\collect.wav", NULL, NULL, NULL);
+                            switch (rand() % 6)
                             {
                                 case 0:
                                     if (Pad->type == pads::normal)
@@ -1379,27 +1415,27 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                                     else score += 30;
                                     break;
 
-                                case 3:
+                                case 2:
                                     if (Pad->type == pads::shooter)
                                         Pad->Transform(pads::normal);
                                     else score += 30;
                                     break;
 
-                                case 4:
+                                case 3:
                                     if (!Net)Net = new PAD(0, 520.0f, pads::net);
                                     else score += 30;
                                     break;
 
-                                case 5:
+                                case 4:
                                     if (rand() % 3 == 1)lifes++;
                                     else score += 50;
                                     break;
 
-                                case 6:
+                                case 5:
                                     Ball->Transform();
                                     break;
 
-                                
+                                default: score += 10;
                             }
 
                             (*falling)->Release();
@@ -1417,6 +1453,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             {
                 if (!(Net->x >= Ball->ex || Net->ex <= Ball->x || Net->y >= Ball->ey || Net->ey <= Ball->y))
                 {
+                    if (sound)mciSendString(L"play .\\res\\snd\\spring.wav", NULL, NULL, NULL);
                     switch (rand() % 3)
                     {
                         case 0:
