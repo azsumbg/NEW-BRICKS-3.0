@@ -172,6 +172,7 @@ void ErrExit(int which_error)
 }
 BOOL CheckRecord()
 {
+    if (score < 1)return no_record;
     int result = 0;
     if (game_winner)score *= 5;
     CheckFile(record_file, &result);
@@ -205,7 +206,53 @@ BOOL CheckRecord()
 void GameOver()
 {
     PlaySound(NULL, NULL, NULL);
+    if (game_winner)
+    {
+        if (sound)PlaySound(L".\\res\\snd\\turngame.wav", NULL, SND_ASYNC);
+        Draw->BeginDraw();
+        Draw->Clear(D2D1::ColorF(D2D1::ColorF::DarkViolet));
+        
+        if (bigText && TextBrush)
+            Draw->DrawText(L"ПРЕВЪРТЯ ИГРАТА", 16, bigText, D2D1::RectF(100.0f, (float)(client_height / 2 - 50), 800.0f, 500.0f), TextBrush);
+        Draw->EndDraw();
+        Sleep(4500);
+    }
 
+    switch (CheckRecord())
+    {
+        case no_record:
+            if (sound)PlaySound(L".\\res\\snd\\loose.wav", NULL, SND_ASYNC);
+            Draw->BeginDraw();
+            Draw->Clear(D2D1::ColorF(D2D1::ColorF::DarkViolet));
+
+            if (bigText && TextBrush)
+                Draw->DrawText(L"ООО ! ЗАГУБИ", 13, bigText, D2D1::RectF(100.0f, (float)(client_height / 2 - 50), 800.0f, 500.0f), TextBrush);
+            Draw->EndDraw();
+            Sleep(6500);
+            break;
+
+        case first_record:
+            if (sound)PlaySound(L".\\res\\snd\\record.wav", NULL, SND_ASYNC);
+            Draw->BeginDraw();
+            Draw->Clear(D2D1::ColorF(D2D1::ColorF::DarkViolet));
+
+            if (bigText && TextBrush)
+                Draw->DrawText(L"ПЪРВИ РЕКОРД", 13, bigText, D2D1::RectF(100.0f, (float)(client_height / 2 - 50), 800.0f, 500.0f), TextBrush);
+            Draw->EndDraw();
+            Sleep(6500);
+            break;
+
+        case record:
+            if (sound)PlaySound(L".\\res\\snd\\record.wav", NULL, SND_ASYNC);
+            Draw->BeginDraw();
+            Draw->Clear(D2D1::ColorF(D2D1::ColorF::DarkViolet));
+
+            if (bigText && TextBrush)
+                Draw->DrawText(L"СВЕТОВЕН РЕКОРД !", 18, bigText, D2D1::RectF(80.0f, (float)(client_height / 2 - 50), 800.0f, 500.0f), TextBrush);
+            Draw->EndDraw();
+            Sleep(6500);
+            break;
+    }
 
     std::remove(temp_file);
     ReleaseCOM();
@@ -449,7 +496,234 @@ void InitGame()
     
     InitLevel();
 }
+void HallofFame()
+{
+    int result = 0;
+    CheckFile(record_file, &result);
 
+    if (result == FILE_NOT_EXIST)
+    {
+        if (sound)MessageBeep(MB_ICONEXCLAMATION);
+        MessageBox(bHwnd, L"Все още няма рекорди на играта !\n\nПостарай се повече !",
+            L"Липсва файл !", MB_OK | MB_APPLMODAL | MB_ICONEXCLAMATION);
+        return;
+    }
+
+    wchar_t status[300] = L"Най-добър играч: ";
+    wchar_t add[5] = L"\0";
+    wchar_t saved_player[16] = L"\0";
+    int saved_score = 0;
+
+    std::wifstream rec(record_file);
+    rec >> saved_score;
+    for (int i = 0; i < 16; i++)
+    {
+        int letter = 0;
+        rec >> letter;
+        saved_player[i] = static_cast<wchar_t>(letter);
+    }
+    rec.close();
+    wcscat_s(status, saved_player);
+    wcscat_s(status, L"\n\nрекорд: ");
+    wsprintf(add, L"%d", saved_score);
+    wcscat_s(status, add);
+
+    result = 0;
+
+    for (int i = 0; i < 300; i++)
+    {
+        if (status[i] != '\0')result++;
+        else break;
+    }
+
+    if (sound)mciSendString(L".\\res\\snd\\tada.wav", NULL, NULL, NULL);
+    Draw->BeginDraw();
+    Draw->Clear(D2D1::ColorF(D2D1::ColorF::DarkViolet));
+
+    if (bigText && TextBrush)
+        Draw->DrawText(status, result, bigText, D2D1::RectF(100.0f, (float)(client_height / 2 - 150), 800.0f, 500.0f), TextBrush);
+    Draw->EndDraw();
+    Sleep(6500);
+
+}
+void SaveGame()
+{
+    int result = 0;
+    CheckFile(save_file, &result);
+    if (result == FILE_EXIST)
+    {
+        if (sound)MessageBeep(MB_ICONASTERISK);
+        if (MessageBox(bHwnd, L"Ако продължиш, ще загубиш записаната игра !\n\nНаистина ли да я презапиша ?",
+            L"Предупреждение !", MB_YESNO | MB_APPLMODAL | MB_ICONQUESTION) == IDNO)return;
+    }
+
+    std::wofstream save(save_file);
+
+    save << score << std::endl;
+    for (int i = 0; i < 16; i++)save << static_cast<int>(current_player[i]) << std::endl;
+    save << level << std::endl;
+    save << lifes << std::endl;
+    save << level_bricks << std::endl;
+
+    save << vBricks.size() << std::endl;
+    if (vBricks.size() > 0)
+    {
+        for (int i = 0; i < vBricks.size(); ++i)
+        {
+            save << vBricks[i]->x << std::endl;
+            save << vBricks[i]->y << std::endl;
+            save << static_cast<int>(vBricks[i]->type) << std::endl;
+            save << vBricks[i]->lifes << std::endl;
+        }
+    }
+
+    if (!Ball)save << -1 << std::endl;
+    else
+    {
+        save << Ball->x << std::endl;
+        save << Ball->y << std::endl;
+        save << static_cast<int>(Ball->type) << std::endl;
+    }
+
+    if (!Pad)save << -1 << std::endl;
+    else
+    {
+        save << Pad->x << std::endl;
+        save << Pad->y << std::endl;
+        save << static_cast<int>(Pad->type) << std::endl;
+    }
+
+    if (!Net)save << -1 << std::endl;
+    else save << Net->net_counter << std::endl;
+    
+    save.close();
+    MessageBox(bHwnd, L"Играта е запазена !", L"Запис !", MB_OK | MB_APPLMODAL | MB_ICONINFORMATION);
+}
+void LoadGame()
+{
+    int result = 0;
+    CheckFile(save_file, &result);
+    if (result == FILE_NOT_EXIST)
+    {
+        if (sound)MessageBeep(MB_ICONEXCLAMATION);
+        MessageBox(bHwnd, L"Все още няма записани игри !\n\nПостарай се повече !",
+            L"Липсва файл !", MB_OK | MB_APPLMODAL | MB_ICONEXCLAMATION);
+        return;
+    }
+    else
+    {
+        if (sound)MessageBeep(MB_ICONASTERISK);
+        if (MessageBox(bHwnd, L"Ако продължиш, ще настояшата игра !\n\nНаистина ли да я презапиша ?",
+            L"Предупреждение !", MB_YESNO | MB_APPLMODAL | MB_ICONQUESTION) == IDNO)return;
+    }
+
+    std::wifstream save(save_file);
+
+    result = 0;
+
+    if (Pad)Pad->Release();
+    Pad = nullptr;
+
+    if (Ball)Ball->Release();
+    Ball = nullptr;
+
+    if (Net)Net->Release();
+    Net = nullptr;
+
+    vBricks.clear();
+    vBullets.clear();
+
+    save >> score;
+    for (int i = 0; i < 16; i++)
+    {
+        int letter = 0;
+        save >> letter; 
+        current_player[i]=static_cast<wchar_t>(letter);
+    }
+
+    name_size = 0;
+    for (int i = 0; i < 16; i++)
+        if (current_player[i] != '\0')name_size++;
+        else break;
+    if (wcscmp(current_player, L"PLAYERCHE") != 0)set_name = true;
+    else set_name = false;
+    
+    save >> level;
+    save >> lifes;
+    save >> level_bricks;
+
+
+    save >> result;
+
+    if (result > 0)
+    {
+        for (int i = 0; i < result; ++i)
+        {
+            float tx = 0;
+            float ty = 0;
+            int ttype = 0;
+            int tlifes = 0;
+            
+            save >> tx;
+            save >> ty;
+            save >> ttype;
+            save >> tlifes;
+
+            vBricks.push_back(iCreateBrick(tx, ty, static_cast<bricks>(ttype)));
+            vBricks.back()->lifes = tlifes;
+        }
+    }
+
+    result = 0;
+    save >> result;
+
+    if (result >= 0)
+    {
+        float ty = 0;
+        int ttype = 0;
+
+        save >> ty;
+        save >> ttype;
+        
+        Ball = new BALL((float)result, ty, static_cast<balls>(ttype));
+    }
+    else
+    {
+        lifes--;
+        InitLevel();
+    }
+
+    result = 0;
+    save >> result;
+
+    if (result >= 0)
+    {
+        float ty = 0;
+        int ttype = 0;
+
+        save >> ty;
+        save >> ttype;
+
+        Pad = new PAD((float)result, ty, static_cast<pads>(ttype));
+    }
+    else
+    {
+        lifes--;
+        InitLevel();
+    }
+
+    result = 0;
+    save >> result;
+
+    if (result > 0)
+    {
+        Net = new PAD(0, 520.0f, pads::net);
+        Net->net_counter = result;
+    }
+
+    save.close();
+    MessageBox(bHwnd, L"Играта е заредена !", L"Зареждане !", MB_OK | MB_APPLMODAL | MB_ICONINFORMATION);
+}
 
 INT_PTR CALLBACK DlgProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -529,7 +803,7 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
         AppendMenu(bStore, MF_STRING, mSave, L"Запази игра");
         AppendMenu(bStore, MF_STRING, mLoad, L"Зареди игра");
         AppendMenu(bStore, MF_SEPARATOR, NULL, NULL);
-        AppendMenu(bStore, MF_STRING, mHoF, L"Зара на славата");
+        AppendMenu(bStore, MF_STRING, mHoF, L"Зала на славата");
 
         SetMenu(hwnd, bBar);
         InitGame();
@@ -664,11 +938,52 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
             pause = false;
             break;
 
+        case mLvl:
+            pause = true;
+            if (level > 9)
+            {
+                if (sound)MessageBeep(MB_ICONASTERISK);
+                MessageBox(hwnd, L"Достигнал си последното ниво !", L"Предупреждение !", 
+                    MB_OK | MB_APPLMODAL | MB_ICONQUESTION);
+                pause = false;
+                break;
+            }
+            else
+            {
+                if (sound)MessageBeep(MB_ICONASTERISK);
+                if (MessageBox(hwnd, L"Ако продължиш, ще загубиш бонусите на това ниво !\n\nНаистина ли преминаваш на следващо ниво ?",
+                    L"Предупреждение !", MB_YESNO | MB_APPLMODAL | MB_ICONQUESTION) == IDNO)
+                {
+                    pause = false;
+                    break;
+                }
+            }
+            level++;
+            InitLevel();
+            pause = false;
+            break;
+
         case mExit:
             SendMessage(hwnd, WM_CLOSE, NULL, NULL);
             break;
 
+        case mSave:
+            pause = true;
+            SaveGame();
+            pause = false;
+            break;
 
+        case mLoad:
+            pause = true;
+            LoadGame();
+            pause = false;
+            break;
+
+        case mHoF:
+            pause = true;
+            HallofFame();
+            pause = false;
+            break;
         }
         break;
 
@@ -682,6 +997,22 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
             }
             DialogBox(bIns, MAKEINTRESOURCE(IDD_PLAYER), hwnd, &DlgProc);
             break;
+        }
+
+        if (b2_hglt)
+        {
+            if (sound)
+            {
+                sound = false;
+                PlaySound(NULL, NULL, NULL);
+                break;
+            }
+            else
+            {
+                sound = true;
+                PlaySound(sound_file, NULL, SND_ASYNC | SND_LOOP);
+                break;
+            }
         }
 
         break;
@@ -718,7 +1049,6 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
 
     return (LRESULT)FALSE;
 }
-
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
@@ -1042,9 +1372,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
         if (bigText && TextBrush)
             Draw->DrawText(logo_to_show, 28, bigText, D2D1::RectF(150.0f, (float)(client_height / 2 - 50), 800.0f, 500.0f), TextBrush);
         Draw->EndDraw();
-        Sleep(200);
+        Sleep(100);
     }
-    Sleep(3000);
+    Sleep(500);
+    PlaySound(sound_file, NULL, SND_ASYNC | SND_LOOP);
 
     //MAIN MESSAGE LOOP ***********************************
 
@@ -1131,7 +1462,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                             Ball->Move();
                         }
 
-                        else if (Ball->x > Pad->x + 85 && Ball->x <= Pad->x + 90.0f)
+                        else if (Ball->x > Pad->x + 85)
                         {
                             Ball->lambda = 4;
                             Ball->dir = dirs::pad_dir_right;
@@ -1183,7 +1514,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                             Ball->Move();
                         }
 
-                        else if (Ball->x > Pad->x + 130 && Ball->x <= Pad->x + 150.0f)
+                        else if (Ball->x > Pad->x + 130)
                         {
                             Ball->lambda = 4;
                             Ball->dir = dirs::pad_dir_right;
@@ -1236,7 +1567,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                             Ball->Move();
                         }
 
-                        else if (Ball->x > Pad->x + 90 && Ball->x <= Pad->x + 100.0f)
+                        else if (Ball->x > Pad->x + 90)
                         {
                             Ball->lambda = 4;
                             Ball->dir = dirs::pad_dir_right;
