@@ -129,7 +129,6 @@ PadObj Net = nullptr;
 PadObj Pad = nullptr;
 BallObj Ball = nullptr;
 
-
 ///////////////////////////////////////////////////////////////////
 
 void ReleaseCOM()
@@ -597,6 +596,7 @@ void SaveGame()
     else save << Net->net_counter << std::endl;
     
     save.close();
+    if (sound)mciSendString(L"play .\\res\\snd\\save.wav", NULL, NULL, NULL);
     MessageBox(bHwnd, L"Играта е запазена !", L"Запис !", MB_OK | MB_APPLMODAL | MB_ICONINFORMATION);
 }
 void LoadGame()
@@ -722,7 +722,50 @@ void LoadGame()
     }
 
     save.close();
+    if (sound)mciSendString(L"play .\\res\\snd\\save.wav", NULL, NULL, NULL);
     MessageBox(bHwnd, L"Играта е заредена !", L"Зареждане !", MB_OK | MB_APPLMODAL | MB_ICONINFORMATION);
+}
+void ShowHelp()
+{
+    int result = 0;
+    CheckFile(help_file, &result);
+    if (result == FILE_NOT_EXIST)
+    {
+        if (sound)MessageBeep(MB_ICONEXCLAMATION);
+        MessageBox(bHwnd, L"Липсва помощна информация за играта !\n\nсвържете се с разработчика !",
+            L"Липсва файл !", MB_OK | MB_APPLMODAL | MB_ICONEXCLAMATION);
+        return;
+    }
+    result = 0;
+    std::wifstream help(help_file);
+    help >> result;
+
+    wchar_t status[1000] = L"\0";
+
+    for (int i = 0; i < result; i++)
+    {
+        int letter = 0;
+        help >> letter;
+        status[i] = static_cast<wchar_t>(letter);
+    }
+    help.close();
+
+    Draw->BeginDraw();
+    Draw->FillRectangle(D2D1::RectF(0.0f, 0.0f, (float)(client_width), 50.0f), ButBackBrush);
+    Draw->FillRectangle(D2D1::RectF(0.0f, 50.0f, (float)(client_width), (float)(client_height)), FieldBrush);
+    if (TextBrush && nrmText)
+    {
+        Draw->DrawText(L"ИМЕ НА ИГРАЧ", 13, nrmText, D2D1::RectF((float)(but1R.left + 15), 10.0f, (float)(but1R.right),
+            50.0f), TextBrush);
+        Draw->DrawText(L"ЗВУЦИ ON / OFF", 15, nrmText, D2D1::RectF((float)(but2R.left + 5), 10.0f, (float)(but2R.right),
+            50.0f), TextBrush);
+        Draw->DrawText(L"ПОМОЩ ЗА ИГРАТА", 16, nrmText, D2D1::RectF((float)(but3R.left + 20), 10.0f, (float)(but3R.right),
+            50.0f), TextBrush);
+    }
+    if (TextBrush && nrmText)
+        Draw->DrawText(status, result, nrmText, D2D1::RectF(50.0f, 100.0f,
+            (float)(client_width), (float)(client_height)), TextBrush);
+    Draw->EndDraw();
 }
 
 INT_PTR CALLBACK DlgProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lParam)
@@ -1011,6 +1054,23 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
             {
                 sound = true;
                 PlaySound(sound_file, NULL, SND_ASYNC | SND_LOOP);
+                break;
+            }
+        }
+
+        if (b3_hglt)
+        {
+            if (!show_help)
+            {
+                pause = true;
+                show_help = true;
+                ShowHelp();
+                break;
+            }
+            else
+            {
+                pause = false;
+                show_help = false;
                 break;
             }
         }
